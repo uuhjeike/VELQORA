@@ -1,9 +1,5 @@
-# VELQORA — SIGNAL DATA
-# Add one post between standalone $ lines.
-# Inside each pair, use: TYPE$DATE$TITLE$DESCRIPTION$MEDIA_URLS$LINK_URL
-# Types: NOTE, IMAGE, VIDEO, MIXED, FILE, LINK, YOUTUBE
-# Use - for unused fields. Separate multiple media URLs with |.
-
+$
+test 999
 $
 NOTE$OCT 16, 2026$Welcome to the signal vault$Velqora is a home for thoughts, visual fragments, video, documents, and useful destinations.$-$-
 $
