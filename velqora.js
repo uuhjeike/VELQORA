@@ -52,9 +52,13 @@ function parseSignals(text) {
       }
     } else {
       const values = content.replace(/^\$+|\$+$/g, '').split('$').map(value => value.trim());
-      // Support either TYPE$DATE$TITLE... or $TYPE$DATE$TITLE... lines.
-      const offset = values[0] === '' ? 1 : 0;
-      fields = { TYPE: values[offset] || 'NOTE', DATE: values[offset+1] || '', TITLE: values[offset+2] || '', DESCRIPTION: values[offset+3] || '', MEDIA: values[offset+4] || '-', LINK: values[offset+5] || '-' };
+      // A simple post like "test 999" inside $ delimiters becomes a text post.
+      // Full posts use TYPE$DATE$TITLE$DESCRIPTION$MEDIA$LINK.
+      if (values.length === 1 && values[0]) {
+        fields = { TYPE: 'NOTE', DATE: '', TITLE: values[0], DESCRIPTION: '', MEDIA: '-', LINK: '-' };
+      } else {
+        fields = { TYPE: values[0] || 'NOTE', DATE: values[1] || '', TITLE: values[2] || '', DESCRIPTION: values[3] || '', MEDIA: values[4] || '-', LINK: values[5] || '-' };
+      }
     }
     const signal = { id: results.length, type: (fields.TYPE || 'NOTE').toUpperCase(), date: fields.DATE || '', title: fields.TITLE || '', description: fields.DESCRIPTION || '', media: fields.MEDIA || '-', link: fields.LINK || '-' };
     if (signal.title && signal.title !== '-') results.push(signal);
