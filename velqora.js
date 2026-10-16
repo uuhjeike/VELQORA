@@ -52,11 +52,17 @@ function parseSignals(text) {
       }
     } else {
       const values = content.replace(/^\$+|\$+$/g, '').split('$').map(value => value.trim());
-      // Support either TYPE$DATE$TITLE... or $TYPE$DATE$TITLE... lines.
-      const offset = values[0] === '' ? 1 : 0;
-      fields = { TYPE: values[offset] || 'NOTE', DATE: values[offset+1] || '', TITLE: values[offset+2] || '', DESCRIPTION: values[offset+3] || '', MEDIA: values[offset+4] || '-', LINK: values[offset+5] || '-' };
+      // Original format: TYPE$DATE$TITLE$DESCRIPTION$MEDIA$LINK.
+      // If a user puts plain text between $ lines (e.g. 'test 999'), show it as a note.
+      const knownTypes = ['NOTE','IMAGE','VIDEO','YOUTUBE','LINK','FILE','MIXED'];
+      if (values.length === 1 || !knownTypes.includes((values[0] || '').toUpperCase())) {
+        fields = { TYPE: 'NOTE', DATE: '', TITLE: values[0] || 'Untitled note', DESCRIPTION: values.slice(1).join('$') || '', MEDIA: '-', LINK: '-' };
+      } else {
+        fields = { TYPE: values[0] || 'NOTE', DATE: values[1] || '', TITLE: values[2] || '', DESCRIPTION: values[3] || '', MEDIA: values[4] || '-', LINK: values[5] || '-' };
+      }
     }
     const signal = { id: results.length, type: (fields.TYPE || 'NOTE').toUpperCase(), date: fields.DATE || '', title: fields.TITLE || '', description: fields.DESCRIPTION || '', media: fields.MEDIA || '-', link: fields.LINK || '-' };
+    if (!signal.title && signal.description) { signal.title = signal.description; signal.description = ''; }
     if (signal.title && signal.title !== '-') results.push(signal);
   }
   return results;
