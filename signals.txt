@@ -1,0 +1,15 @@
+# VELQORA — SIGNAL DATA
+# Edit THIS text file to add entries. Do not change the HTML, CSS, or JavaScript for new posts.
+# One signal per line:
+# $TYPE$DATE$TITLE$DESCRIPTION$MEDIA_URLS$LINK_URL
+# Types: NOTE, IMAGE, VIDEO, MIXED, FILE, LINK, YOUTUBE
+# Use - for unused fields. Separate multiple media URLs with |
+# IMAGE/MIXED support image URLs and direct video URLs. VIDEO expects direct video URLs.
+# FILE: use the file URL in LINK_URL. LINK: use the website URL in LINK_URL.
+# YOUTUBE: use a YouTube watch, shorts, or youtu.be URL in LINK_URL.
+# Do not put a $ symbol inside your own fields; it separates each field.
+$NOTE$OCT 16, 2026$Welcome to the signal vault$Velqora is a home for thoughts, visual fragments, video, documents, and useful destinations. Add new signals below whenever you want.$-$-
+$IMAGE$OCT 15, 2026$Quiet horizons$A pair of visual signals for the collection.$https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&q=85|https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85$-
+$YOUTUBE$OCT 12, 2026$Frequency to return to$A video signal saved for another moment.$-$https://www.youtube.com/watch?v=jfKfPfyJRdk
+$LINK$OCT 10, 2026$A portal beyond the feed$A useful shortcut to the wider web.$-$https://example.com
+# Add new signals below this line.
