@@ -11,10 +11,55 @@ let selectedFilter = "all";
 const $ = selector => document.querySelector(selector);
 const safeText = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function parseSignals(text) {
-  return text.split(/\r?\n/).map(line=>line.trim()).filter(line=>line && !line.startsWith("#")).map((line,id)=>{
-    const [type="NOTE",date="",title="",description="",media="-",link="-"] = line.split("$").map(field=>field.trim());
-    return {id,type:type.toUpperCase(),date,title,description,media,link};
-  }).filter(signal=>signal.title && signal.title!=="-");
+  // Each post is wrapped by a standalone dollar-sign line:
+  // $
+  // TYPE$DATE$TITLE$DESCRIPTION$MEDIA_URLS$LINK_URL
+  // $
+  // Also accepts older one-line entries without wrapper lines.
+  const lines = text.split(/\r?\n/);
+  const groups = [];
+  let current = [];
+  let inside = false;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line === '$') {
+      if (inside) {
+        if (current.some(item => item.trim() && !item.trim().startsWith('#'))) groups.push(current.join('\n').trim());
+        current = [];
+        inside = false;
+      } else {
+        inside = true;
+        current = [];
+      }
+    } else if (inside) {
+      current.push(rawLine);
+    } else if (line && !line.startsWith('#')) {
+      groups.push(line);
+    }
+  }
+  if (inside && current.some(item => item.trim() && !item.trim().startsWith('#'))) groups.push(current.join('\n').trim());
+
+  const results = [];
+  for (const group of groups) {
+    const content = group.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('#')).join('\n');
+    if (!content) continue;
+    let fields;
+    if (/\b(TYPE|TITLE|DESCRIPTION|MEDIA|LINK)\s*:/i.test(content)) {
+      fields = {};
+      for (const line of content.split(/\r?\n/)) {
+        const match = line.match(/^\s*(TYPE|DATE|TITLE|DESCRIPTION|MEDIA|LINK)\s*:\s*(.*?)\s*$/i);
+        if (match) fields[match[1].toUpperCase()] = match[2];
+      }
+    } else {
+      const values = content.replace(/^\$+|\$+$/g, '').split('$').map(value => value.trim());
+      // Support either TYPE$DATE$TITLE... or $TYPE$DATE$TITLE... lines.
+      const offset = values[0] === '' ? 1 : 0;
+      fields = { TYPE: values[offset] || 'NOTE', DATE: values[offset+1] || '', TITLE: values[offset+2] || '', DESCRIPTION: values[offset+3] || '', MEDIA: values[offset+4] || '-', LINK: values[offset+5] || '-' };
+    }
+    const signal = { id: results.length, type: (fields.TYPE || 'NOTE').toUpperCase(), date: fields.DATE || '', title: fields.TITLE || '', description: fields.DESCRIPTION || '', media: fields.MEDIA || '-', link: fields.LINK || '-' };
+    if (signal.title && signal.title !== '-') results.push(signal);
+  }
+  return results;
 }
 function getCategory(type){return ({NOTE:"text",IMAGE:"photo",VIDEO:"video",YOUTUBE:"video",MIXED:"mixed",FILE:"file",LINK:"link"})[type]||"text";}
 function safeURL(value){if(!value||value==="-")return "";try{const url=new URL(value,location.href);return ["http:","https:"].includes(url.protocol)?url.href:"";}catch{return "";}}
