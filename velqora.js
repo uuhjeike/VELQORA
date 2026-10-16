@@ -79,27 +79,40 @@ function safeURL(value){
   } catch{return "";}
 }
 function youtubeID(value){
+  if(!value)return "";
   try {
-    const url=new URL(value.trim());
-    const host=url.hostname.toLowerCase().replace(/^www\./,"").replace(/^m\./,"");
+    let candidate=String(value).trim().replace(/[),.;]+$/g,"");
+    // Accept a URL pasted with or without a scheme.
+    if(!/^https?:\/\//i.test(candidate)) candidate="https://"+candidate.replace(/^\/\//,"");
+    const url=new URL(candidate);
+    const host=url.hostname.toLowerCase().replace(/^www\./,"").replace(/^m\./,"").replace(/^music\./,"");
     let id="";
     if(host==="youtu.be") id=url.pathname.split("/").filter(Boolean)[0]||"";
-    else if(host.endsWith("youtube.com")||host==="youtube-nocookie.com") {
-      if(url.pathname==="/watch") id=url.searchParams.get("v")||"";
-      else if(/^\/(shorts|embed|live)\//.test(url.pathname)) id=url.pathname.split("/")[2]||"";
+    else if(host==="youtube.com"||host.endsWith(".youtube.com")||host==="youtube-nocookie.com"||host.endsWith(".youtube-nocookie.com")) {
+      if(url.pathname==="/watch"||url.pathname==="/watch/") id=url.searchParams.get("v")||"";
+      else if(/^\/(shorts|embed|live|v)\//i.test(url.pathname)) id=url.pathname.split("/").filter(Boolean)[1]||"";
     }
-    return /^[A-Za-z0-9_-]{6,}$/.test(id)?id:"";
+    return /^[A-Za-z0-9_-]{11}$/.test(id)?id:"";
   } catch{return "";}
+}
+function youtubeFromText(value){
+  const text=String(value||"");
+  const matches=text.match(/(?:https?:\/\/)?(?:(?:www|m|music)\.)?(?:youtube\.com\/(?:watch\?[^\s|]*|shorts\/[^\s?&#]+|live\/[^\s?&#]+|embed\/[^\s?&#]+)|youtu\.be\/[^\s?&#]+)/ig)||[];
+  for(const match of matches){const id=youtubeID(match);if(id)return id;}
+  return "";
 }
 function mediaHTML(signal){
   const rawMedia=signal.media&&signal.media!=="-"?signal.media.split("|").map(s=>s.trim()).filter(Boolean):[];
   const urls=rawMedia.map(safeURL).filter(Boolean);
-  const ytCandidate=signal.link!=="-"?signal.link:(rawMedia[0]||"");
-  const ytId=youtubeID(ytCandidate);
-  // Embed YouTube URLs regardless of whether the post was labelled YOUTUBE or LINK.
+  // Detect YouTube URLs in the link, media, title, or description regardless of the post type.
+  const candidates=[signal.link,...rawMedia,signal.description,signal.title].filter(v=>v&&v!=="-");
+  let ytId="";
+  for(const candidate of candidates){ytId=youtubeID(candidate)||youtubeFromText(candidate);if(ytId)break;}
   if(signal.type==="YOUTUBE"||ytId){
-    const id=ytId||urls.map(youtubeID).find(Boolean);
-    return id?`<div class="youtube"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}" title="${safeText(signal.title||"YouTube video")}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`:`<a class="resource" href="${safeText(safeURL(ytCandidate))}" target="_blank" rel="noopener noreferrer">Open YouTube video ↗</a>`;
+    if(!ytId) ytId=urls.map(youtubeID).find(Boolean)||"";
+    if(ytId) return `<div class="youtube"><iframe src="https://www.youtube.com/embed/${encodeURIComponent(ytId)}" title="${safeText(signal.title||"YouTube video")}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><a class="youtube-open" href="https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}" target="_blank" rel="noopener noreferrer">Open on YouTube ↗</a>`;
+    const fallback=signal.link&&signal.link!=="-"?signal.link:rawMedia[0]||"";
+    return fallback?`<a class="resource" href="${safeText(safeURL(fallback))}" target="_blank" rel="noopener noreferrer">Open YouTube video ↗</a>`:"";
   }
   if(signal.type==="VIDEO")return urls.length?`<div class="media-grid ${urls.length===1?"single":""}">${urls.map(url=>`<video controls playsinline preload="metadata" src="${safeText(url)}"></video>`).join("")}</div>`:"";
   if(signal.type==="IMAGE"||signal.type==="MIXED"){
